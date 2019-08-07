@@ -120,7 +120,6 @@ function decode_layer!(set, dest, code)
   end
 end
 
-
 ################################################################################
 
 function encode_board(get, board)

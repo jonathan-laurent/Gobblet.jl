@@ -5,7 +5,7 @@
 # Three games are available, from simplest to hardest to solve
 @enum GameChoice Standard Simple TicTacToe
 
-const GAME = Simple
+const GAME = Standard
 
 const BOARD_SIDE = 3
 const NUM_POSITIONS = BOARD_SIDE ^ 2
@@ -260,18 +260,6 @@ function process_board_update!(s::State)
       end
     end
   end
-end
-
-################################################################################
-
-abstract type AI end
-# Interface: play(::AI, ::State)
-# It is guaranteed that at least one valid action exists when `play` is called.
-
-struct RandomAI <: AI end
-
-function play(::RandomAI, s::State)
-  rand(available_actions(s))
 end
 
 ################################################################################

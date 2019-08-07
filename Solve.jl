@@ -3,43 +3,57 @@
 # No attempt is made to exploit a weak adversary
 ################################################################################
 
-# No guarantee for end states.
-# 00: unsolved or part of a loop
-# 10: guaranteed win for the nominal player
-# 01: guaranteed loss for the nominal player
-# 11: guaranteed tie
-
 const NOMINAL_PLAYER = Red
 const ADVERSARY = Blue
 
-mutable struct Solution <: AI
+mutable struct Solution
   V :: BitVector
-  complete :: Bool
+  changed :: Bool
   numsolved :: Int # number of solved state
   itnum :: Int # number of previous iterations
   function Solution()
-    new(falses(2 * CARD_BOARDS), false, 0, 0)
+    new(falses(3 * CARD_BOARDS), true, 0, 0)
   end
 end
 
-const Status = Tuple{Bool, Bool}
+computed(s::Solution) = !s.changed
+
+# false, false, false -> I don't know
+# Represents a nonempty subinterval of {-1, 0, 1}
+# Initially: false, false, false
+struct Status
+  solved :: Bool
+  noloss :: Bool
+  nowin  :: Bool
+end
+
+Status(v) = Status(true, v >= 0, v <= 0)
+Status(minv, maxv) = Status(minv == maxv, minv >= 0, maxv <= 0)
+minvalue(s::Status) = Int(s.noloss) - Int(!s.solved || s.nowin)
+maxvalue(s::Status) = Int(!s.solved || s.noloss) - Int(s.nowin)
+symmetric(s::Status) = Status(s.solved, s.nowin, s.noloss)
 
 function status(env::Solution, bcode::Int) :: Status
-  win  = env.V[2 * bcode + 1]
-  loss = env.V[2 * bcode + 2]
-  return (win, loss)
+  solved = env.V[3 * bcode + 1]
+  noloss = env.V[3 * bcode + 2]
+  nowin  = env.V[3 * bcode + 3]
+  return Status(solved, noloss, nowin)
 end
 
-function solved(env::Solution, bcode::Int)
-  win, loss = status(env, bcode)
-  return win || loss
+solved(env::Solution, bcode::Int) = env.V[3 * bcode + 1]
+
+function set_bit!(env::Solution, bcode, offset, v)
+  idx = 3 * bcode + offset
+  if (env.V[idx] != v) env.changed = true end
+  env.V[idx] = v
 end
 
-function set_status!(env::Solution, bcode::Int, (win, loss)::Status)
+function set_status!(env::Solution, bcode::Int, status)
   @assert !solved(env, bcode)
-  if (win || loss) env.numsolved += 1 end
-  env.V[2 * bcode + 1] = win
-  env.V[2 * bcode + 2] = loss
+  if (status.solved) env.numsolved += 1 end
+  set_bit!(env, bcode, 1, status.solved)
+  set_bit!(env, bcode, 2, status.noloss)
+  set_bit!(env, bcode, 3, status.nowin)
 end
 
 function encode_board_symmetric(board)
@@ -52,11 +66,11 @@ end
 function status(env::Solution, s::State)
   if s.finished
     if isnothing(s.winner)
-      return (true, true)
-    elseif (s.winner == s.curplayer)
-      return (true, false)
+      return Status(0)
+    elseif s.winner == s.curplayer
+      return Status(1)
     else
-      return (false, true)
+      return Status(-1)
     end
   else
     if s.curplayer == NOMINAL_PLAYER
@@ -70,50 +84,38 @@ end
 
 function Qstatus(env::Solution, s::State, a::Action)
   execute_action!(s, a)
-  other_won, other_lost = status(env, s)
+  other = status(env, s)
   cancel_action!(s, a)
-  return (other_lost, other_won)
-end
-
-# There is a total order on status:
-# 10 > 11 > 00 > 01
-
-status_rank((win, loss)) = 2 * (Int(win) - Int(loss)) + Int(win && loss)
-
-function best_status(st1, st2)
-  status_rank(st1) > status_rank(st2) ? st1 : st2
+  return symmetric(other)
 end
 
 function iterate!(env::Solution; progressbar=false)
   s = State(first_player=NOMINAL_PLAYER)
   progressbar && (progress = Progress(CARD_BOARDS, 1))
-  pre_numsolved = env.numsolved
+  env.changed = false
   for code in 0:CARD_BOARDS-1
-    decode_board!(s.board, code)
-    process_board_update!(s)
-    @assert !s.finished # per our optimization of `process_board_update!`
     if !solved(env, code)
-      init = ((false, true), true, env, s)
-      status, stuck, env, s = fold_actions(s, init) do acc, a
+      decode_board!(s.board, code)
+      process_board_update!(s)
+      @assert !s.finished # per our optimization of `process_board_update!`
+      minv, maxv, env, s = fold_actions(s, (-1, -1, env, s)) do acc, a
         # We take care of capturing no variable so that no closure is needed.
-        local status, stuck, env, s = acc
-        status = best_status(status, Qstatus(env, s, a))
-        (status, false, env, s)
+        local minv, maxv, env, s = acc
+        Q = Qstatus(env, s, a)
+        minv = max(minv, minvalue(Q))
+        maxv = max(maxv, maxvalue(Q))
+        return (minv, maxv, env, s)
       end
-      # No action available: we solve the state so we don't have to explore
-      # it anymore. Should not happen for gobblet gobblers.
-      if (stuck) status = (true, true) end
-      set_status!(env, code, status)
+      set_status!(env, code, Status(minv, maxv))
     end
     progressbar && (next!(progress))
   end
-  env.complete = pre_numsolved == env.numsolved
   env.itnum += 1
 end
 
 function solve()
   env = Solution()
-  while !env.complete
+  while env.changed
     iterate!(env)
   end
   return env
@@ -121,23 +123,11 @@ end
 
 ################################################################################
 
-function value(env::Solution, s::State)
-  win, loss = status(env, s)
-  return Int(win) - Int(loss)
-end
+# If the state is unresolved, then it is part of an infinite loop.
+value(s::Status) = s.solved ? minvalue(s) : 0
 
-function Qvalue(env::Solution, s::State, a::Action)
-  execute_action!(s, a)
-  Q = - value(env, s)
-  cancel_action!(s, a)
-  return Q
-end
+value(env::Solution, s::State) = value(status(env, s))
 
-function play(env::Solution, s::State)
-  actions = available_actions(s)
-  Qs = [Qvalue(env, s, a) for a in actions]
-  a = argmax(Qs)
-  return actions[a]
-end
+Qvalue(env::Solution, s::State, a::Action) = value(Qstatus(env, s, a))
 
 ################################################################################

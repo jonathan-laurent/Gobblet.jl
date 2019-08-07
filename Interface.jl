@@ -2,9 +2,42 @@
 # Console Interface
 ################################################################################
 
+abstract type Agent end
+
+struct Human <: Agent end
+
+abstract type AI <: Agent end
+# Interface: play(::AI, ::State)
+# It is guaranteed that at least one valid action exists when `play` is called.
+
+struct RandomAI <: AI end
+
+function play(::RandomAI, s::State)
+  rand(available_actions(s))
+end
+
+struct PerfectPlay <: AI
+  solution :: Solution
+  function PerfectPlay(s::Solution)
+    @assert computed(s)
+    new(s)
+  end
+end
+
+function play(ai::PerfectPlay, s::State)
+  actions = available_actions(s)
+  Qs = [Qvalue(ai.solution, s, a) for a in actions]
+  a = rand(actions[Qs .== maximum(Qs)])
+  # a = actions[argmax(Qs)]
+  return a
+end
+
+################################################################################
+
 using Crayons
 
 style(p::Player) = p == Red ? crayon"light_red" : crayon"light_blue"
+playername(p::Player) = p == Red ? "Red" : "Blue"
 
 const INTERFACE_PRINT_AVAILABLE = (NUM_LAYERS > 1)
 
@@ -46,8 +79,6 @@ end
 
 ################################################################################
 
-
-
 function print_available(s::State, p::Player)
   print(style(p))
   for l in reverse(1:NUM_LAYERS)
@@ -83,44 +114,44 @@ end
 
 ################################################################################
 
-function interactive!(s::State; human::Player=Red, AI::AI=RandomAI())
+function interactive!(s::State; red::Agent, blue::Agent, solution=nothing)
   while true
+    print(style(s.curplayer), playername(s.curplayer), "'s turn")
+    print(crayon"reset", "\n\n")
     print_board(s, with_position_names=true)
     if INTERFACE_PRINT_AVAILABLE
       print("\n")
-      print_available(s, human)
+      print_available(s, Red)
       print(" ")
-      print_available(s, symmetric(human))
+      print_available(s, Blue)
       print("\n")
     end
     print("\n")
     if s.finished
-      if s.winner == human
-        msg = "You win!"
-      elseif s.winner == symmetric(human)
-        msg = "You loose!"
+      if isnothing(s.winner)
+        println(crayon"yellow", "It's a tie!")
       else
-        msg = "This is a tie."
+        println(style(s.winner), "$(playername(s.winner)) wins !")
       end
-      println(crayon"yellow", msg, crayon"reset")
       break
     end
+    curagent = s.curplayer == Red ? red : blue
     # The human plays
-    if s.curplayer == human
+    if isa(curagent, Human)
       a = nothing
       while a == nothing || a ∉ available_actions(s)
         print("> ")
         input = readline()
         isempty(input) && return
         a = parse_action(s, input)
-        if isnothing(a) && isa(AI, Solution) # Special command
+        if isnothing(a) && !isnothing(solution) # Special command
           inputws = split(lowercase(input))
           if inputws[1] ∈ ["v", "value"]
-            println(value(AI, s))
+            println(value(solution, s))
           elseif inputws[1] ∈ ["q", "qvalue"] && length(inputws) >= 2
             aquery = parse_action(s, inputws[2])
             if !isnothing(aquery) && aquery ∈ available_actions(s)
-              println(Qvalue(AI, s, aquery))
+              println(Qvalue(solution, s, aquery))
             end
           end
         end
@@ -129,7 +160,8 @@ function interactive!(s::State; human::Player=Red, AI::AI=RandomAI())
       println("")
     # The computer plays
     else
-      a = play(AI, s)
+      @assert isa(curagent, AI)
+      a = play(curagent, s)
       execute_action!(s, a)
     end
   end

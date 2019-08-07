@@ -2,6 +2,11 @@
 # Tests
 ################################################################################
 
+include("Game.jl")
+include("Encoding.jl")
+include("Solve.jl")
+include("Interface.jl")
+
 using Test
 
 @testset "Unit tests" begin
@@ -39,6 +44,21 @@ end
 @testset "layer encoding" begin
   for i in 0:CARD_LAYERS-1
     @test encode_layer(decode_layer(i)) == i
+  end
+end
+
+################################################################################
+# Solving
+
+@testset "state status encoding" begin
+  for minv in -1:1
+    for maxv in -1:1
+      if minv <= maxv
+        s = Status(minv, maxv)
+        @test minvalue(s) == minv
+        @test maxvalue(s) == maxv
+      end
+    end
   end
 end
 
