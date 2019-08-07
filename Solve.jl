@@ -1,7 +1,6 @@
-################################################################################
+###############################################################################
 # Solving the game using value iteration
-# No attempt is made to exploit a weak adversary
-################################################################################
+###############################################################################
 
 const NOMINAL_PLAYER = Red
 const ADVERSARY = Blue
@@ -18,9 +17,8 @@ end
 
 computed(s::Solution) = !s.changed
 
-# false, false, false -> I don't know
 # Represents a nonempty subinterval of {-1, 0, 1}
-# Initially: false, false, false
+# The initial value (false, false, false) codes for {-1, 0, 1}
 struct Status
   solved :: Bool
   noloss :: Bool

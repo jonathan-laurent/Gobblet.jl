@@ -1,5 +1,5 @@
 ################################################################################
-# Console Interface
+# A simple console Interface
 ################################################################################
 
 abstract type Agent end
@@ -98,7 +98,7 @@ function print_board(s::State; with_position_names=false)
       if l == 0
         print(" ")
       else
-        print(style(poscolor(s, pos)), l, crayon"reset")
+        print(style(pos_color(s, pos)), l, crayon"reset")
       end
       print(" ")
     end

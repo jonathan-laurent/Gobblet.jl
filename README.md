@@ -16,11 +16,8 @@ to place a small or large goblet (as opposed to a medium-sized one).
 
 The junior game has about three billion possible states. Therefore, it can be
 solved by exhaustive search. Doing so on a personal computer requires a careful
-implementation though. Moreover, we think that it makes for a good showcase of
-how [Julia](https://julialang.org/) makes writing high-performance code painless
-and natural.
-
-To speed-up the search process, we use the following tricks:
+implementation though. To speed-up the search process, we use the following
+tricks:
 
 + We augment the standard _Value Iteration_ algorithm by maintaining both a
 lower and an upper bound on the value of each state. When these two coincide,
@@ -28,15 +25,15 @@ the state is labelled as _solved_ and does not have to be updated using the
 Bellman equation in future iterations. Because most states get solved in early
 iterations, using this trick yields a ≈15x overall speedup.
 + Instead of using a hash table to store the value function, we build an
-explicit bijection between the set of game states and the
-[0, 2881473967] integer range. This allows a very compact representation of the
-value function as a bit vector that can easily fit into main memory.
+explicit bijection between the set of game states and the [0, 2881473966]
+integer range. This allows a compact representation of the value function as a
+bit vector that can easily fit into memory.
 
-Using those tricks, a solution can be computed in about eight hours on a
-personal computer.
-
+Finally, we note that [Julia](https://julialang.org/) makes writing
+high-performance code surprisingly painless and natural.
 
 ## Usage
 
 To start a game, just use `./run.sh`. The optimal strategy is computed and
-stored at first launch.
+stored at first launch. It should take about six hours on a standard desktop
+computer.
