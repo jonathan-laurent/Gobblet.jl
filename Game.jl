@@ -2,21 +2,18 @@
 # An efficient implementation of the Gobblet game
 ################################################################################
 
-# Three variants are available, from hardest to simplest to solve
-@enum GameChoice Standard Simple TicTacToe
-
-const GAME = Standard
-
+@isdefined(GAME) || @eval const GAME = :standard
+  
 const BOARD_SIDE = 3
 const NUM_POSITIONS = BOARD_SIDE ^ 2
 
-if GAME == Standard
+if GAME == :standard
   const NUM_LAYERS = 3
   const NUM_GOBBLET_COPIES = 2 # 2 two goblets of each kind
-elseif GAME == Simple
+elseif GAME == :simple
   const NUM_LAYERS = 2
   const NUM_GOBBLET_COPIES = 2
-elseif GAME == TicTacToe
+elseif GAME == :tictactoe
   const NUM_LAYERS = 1
   const NUM_GOBBLET_COPIES = NUM_POSITIONS
 end

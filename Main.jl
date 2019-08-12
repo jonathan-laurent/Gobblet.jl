@@ -11,10 +11,7 @@ flush(stdout)
 
 ################################################################################
 
-include("Game.jl")
-include("Encoding.jl")
-include("Solve.jl")
-include("Interface.jl")
+include("Gobblets.jl")
 
 const SOLUTION_FOLDER = "solution"
 const SOLUTION_FILE = "$(SOLUTION_FOLDER)/$(string(GAME)).sol"
