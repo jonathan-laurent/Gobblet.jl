@@ -59,6 +59,19 @@ mutable struct State
   end
 end
 
+function State(board::Board; first_player=Red)
+  s = State(first_player=first_player)
+  s.board = board
+  process_board_update!(s)
+  red_alignment = has_won(s, Red)
+  blue_alignment = has_won(s, Blue)
+  stuck = is_stuck(s)
+  if (stuck || red_alignment || blue_alignment) s.finished = true end
+  if (red_alignment && !blue_alignment) s.winner = Red end
+  if (blue_alignment && !red_alignment) s.winner = Blue end
+  return s
+end
+
 ################################################################################
 
 @inline available(s::State, p::Player) =
@@ -189,11 +202,8 @@ end
 
 ################################################################################
 
-# Folds over all the available actions
-function fold_actions(f::Function, s::State, init)
-  @assert !s.finished
+function fold_add_actions(f::Function, s::State, init)
   acc = init
-  # Look for places to add a new goblet
   for l in 1:NUM_LAYERS
     if available(s, s.curplayer)[l] > 0
       for p in 1:NUM_POSITIONS
@@ -203,7 +213,11 @@ function fold_actions(f::Function, s::State, init)
       end
     end
   end
-  # Look to move an existing goblet
+  return acc
+end
+
+function fold_move_actions(f::Function, s::State, init)
+  acc = init
   for from in 1:NUM_POSITIONS
     if pos_color(s, from) == s.curplayer
       size = s.top[from]
@@ -215,6 +229,12 @@ function fold_actions(f::Function, s::State, init)
     end
   end
   return acc
+end
+
+# Folds over all the available actions
+function fold_actions(f::Function, s::State, init)
+  @assert !s.finished
+  fold_move_actions(f, s, fold_add_actions(f, s, init))
 end
 
 function iter_actions(f::Function, s::State)
