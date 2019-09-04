@@ -155,7 +155,6 @@ const CARD_BOARDS = CARD_LAYERS ^ NUM_LAYERS
 
 ################################################################################
 
-using Profile
 using ProgressMeter
 
 function test_encode_board(;n=CARD_BOARDS, progressbar=false)
@@ -167,14 +166,5 @@ function test_encode_board(;n=CARD_BOARDS, progressbar=false)
   progressbar && next!(p)
   end
 end
-
-#=
-onesec = CARD_BOARDS÷7200
-test_encode_board(onesec)
-Profile.clear_malloc_data()
-@time test_encode_board(10*onesec)
-=#
-
-# using Coverage ; reverse(analyze_malloc("."))
 
 ################################################################################

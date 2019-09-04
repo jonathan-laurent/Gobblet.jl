@@ -1,3 +1,3 @@
 #!/bin/sh
 
-julia -O3 --check-bounds=no --color=yes Main.jl
+julia --project -O3 --check-bounds=no --color=yes scripts/Driver.jl # tictactoe

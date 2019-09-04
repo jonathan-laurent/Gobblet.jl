@@ -1,17 +1,24 @@
 ################################################################################
-# Gobblet.jl
+# Gobblet
 ################################################################################
 
 using Crayons
 using Serialization
 using Printf
 
+if "tictactoe" ∈ ARGS
+  using Gobblet: TicTacToe
+  using Gobblet.TicTacToe
+  const Game = TicTacToe
+else
+  using Gobblet
+  const Game = Gobblet
+end
+
 println(crayon"yellow", "\nLet's play Gobblet Gobblers!", crayon"reset")
 flush(stdout)
 
 ################################################################################
-
-include("Gobblets.jl")
 
 const SOLUTION_FOLDER = "solution"
 const SOLUTION_FILE = "$(SOLUTION_FOLDER)/$(string(GAME)).sol"
@@ -26,18 +33,18 @@ end
 
 while solution.changed
   println("Starting learning iteration: ", solution.itnum + 1)
-  iterate!(solution, progressbar=true)
+  iterate_value!(solution, progressbar=true)
   serialize(SOLUTION_FILE, solution)
   @printf("Solved states: %d/%d (%.2f%%).\n",
     solution.numsolved,
-    CARD_BOARDS,
-    100 * solution.numsolved / CARD_BOARDS)
+    Game.CARD_BOARDS,
+    100 * solution.numsolved / Game.CARD_BOARDS)
 end
 
 print("\n")
 
 function player_choice_prompt(p::Player)
-  name = lowercase(playername(p))
+  name = lowercase(player_name(p))
   while true
     print("Select $(name) player ([h]uman, [c]omputer): ")
       input = lowercase(readline())

@@ -37,7 +37,7 @@ end
 using Crayons
 
 style(p::Player) = p == Red ? crayon"light_red" : crayon"light_blue"
-playername(p::Player) = p == Red ? "Red" : "Blue"
+player_name(p::Player) = p == Red ? "Red" : "Blue"
 
 const INTERFACE_PRINT_AVAILABLE = (NUM_LAYERS > 1)
 
@@ -116,7 +116,7 @@ end
 
 function interactive!(s::State; red::Agent, blue::Agent, solution=nothing)
   while true
-    print(style(s.curplayer), playername(s.curplayer), "'s turn")
+    print(style(s.curplayer), player_name(s.curplayer), "'s turn")
     print(crayon"reset", "\n\n")
     print_board(s, with_position_names=true)
     if INTERFACE_PRINT_AVAILABLE
@@ -131,7 +131,7 @@ function interactive!(s::State; red::Agent, blue::Agent, solution=nothing)
       if isnothing(s.winner)
         println(crayon"yellow", "It's a tie!")
       else
-        println(style(s.winner), "$(playername(s.winner)) wins !")
+        println(style(s.winner), "$(player_name(s.winner)) wins !")
       end
       break
     end

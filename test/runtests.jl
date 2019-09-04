@@ -2,17 +2,15 @@
 # Tests
 ################################################################################
 
-include("Game.jl")
-include("Encoding.jl")
-include("Solve.jl")
-include("Interface.jl")
-
+using Gobblet
 using Test
 
 @testset "Unit tests" begin
 
 ################################################################################
 # Interface
+
+using Gobblet: pos_of_xy, xy_of_pos, parse_pos, print_pos
 
 @testset "pos conversions" begin
   for p in 1:NUM_POSITIONS
@@ -27,6 +25,10 @@ end
 
 ################################################################################
 # Encodings
+
+using Gobblet: LAYER_LAYOUTS, CARD_LAYERS
+using Gobblet: encode_ksubset, enumerate_ksubsets
+using Gobblet: encode_layout, encode_layer, decode_layer
 
 @testset "layout encodings" begin
   for (i, l) in enumerate(LAYER_LAYOUTS)
@@ -48,7 +50,9 @@ end
 end
 
 ################################################################################
-# Solving
+# Solver
+
+using Gobblet: Status, minvalue, maxvalue
 
 @testset "state status encoding" begin
   for minv in -1:1

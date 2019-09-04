@@ -1,13 +1,19 @@
 ################################################################################
-# Mean header
+# Gobblet.jl
 ################################################################################
 
-# To choose which game to play, set the GAME variable to one of the
-# following values: :standard, :simple, :tictactoe
+module Gobblet
 
-include("Game.jl")
-include("Encoding.jl")
-include("Solve.jl")
-include("Interface.jl")
+  export TicTacToe
+  
+  const GAME = :standard
+  include("Module.jl")
+  
+  module TicTacToe
+    const GAME = :tictactoe
+    include("Module.jl")
+  end
+  
+end
 
 ################################################################################

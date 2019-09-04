@@ -87,7 +87,7 @@ function Qstatus(env::Solution, s::State, a::Action)
   return symmetric(other)
 end
 
-function iterate!(env::Solution; progressbar=false)
+function iterate_value!(env::Solution; progressbar=false)
   s = State(first_player=NOMINAL_PLAYER)
   progressbar && (progress = Progress(CARD_BOARDS, 1))
   env.changed = false
@@ -114,7 +114,7 @@ end
 function solve()
   env = Solution()
   while env.changed
-    iterate!(env)
+    iterate_value!(env)
   end
   return env
 end

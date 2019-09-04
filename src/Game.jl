@@ -2,6 +2,9 @@
 # An efficient implementation of the Gobblet game
 ################################################################################
 
+# To choose which game to play, set the GAME variable to one of the
+# following values: :standard, :simple, :tictactoe
+
 @isdefined(GAME) || @eval const GAME = :standard
   
 const BOARD_SIDE = 3
@@ -10,12 +13,15 @@ const NUM_POSITIONS = BOARD_SIDE ^ 2
 if GAME == :standard
   const NUM_LAYERS = 3
   const NUM_GOBBLET_COPIES = 2 # 2 two goblets of each kind
+  const ENABLE_MOVE_ACTIONS = true
 elseif GAME == :simple
   const NUM_LAYERS = 2
   const NUM_GOBBLET_COPIES = 2
+  const ENABLE_MOVE_ACTIONS = true
 elseif GAME == :tictactoe
   const NUM_LAYERS = 1
   const NUM_GOBBLET_COPIES = NUM_POSITIONS
+  const ENABLE_MOVE_ACTIONS = false
 end
 
 ################################################################################
@@ -231,10 +237,16 @@ function fold_move_actions(f::Function, s::State, init)
   return acc
 end
 
-# Folds over all the available actions
-function fold_actions(f::Function, s::State, init)
-  @assert !s.finished
-  fold_move_actions(f, s, fold_add_actions(f, s, init))
+if ENABLE_MOVE_ACTIONS
+  function fold_actions(f::Function, s::State, init)
+    @assert !s.finished
+    fold_move_actions(f, s, fold_add_actions(f, s, init))
+  end
+else
+  function fold_actions(f::Function, s::State, init)
+    @assert !s.finished
+    fold_add_actions(f, s, init)
+  end
 end
 
 function iter_actions(f::Function, s::State)
